@@ -1,0 +1,2617 @@
+{
+	"info": {
+		"_postman_id": "96d38040-5f5b-4ee7-a89c-544e8b907335",
+		"name": "AEP - Profile integration for ISVs",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "0: Initialize and Authenticate",
+			"item": [
+				{
+					"name": "INIT: Load Crypto Library for RS256",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "824e628b-b420-417b-894b-417ab6412896",
+								"exec": [
+									"postman.setGlobalVariable(\"jsrsasign-js\", responseBody);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://kjur.github.io/jsrsasign/jsrsasign-latest-all-min.js",
+							"protocol": "http",
+							"host": [
+								"kjur",
+								"github",
+								"io"
+							],
+							"path": [
+								"jsrsasign",
+								"jsrsasign-latest-all-min.js"
+							]
+						},
+						"description": "Load the RSA-Sign Crypto LIbrary in a global environment variable\n\nSource: http://kjur.github.io/jsrsasign/jsrsasign-latest-all-min.js\n\nGithub: https://github.com/kjur/jsrsasign"
+					},
+					"response": []
+				},
+				{
+					"name": "AUTH: Generate JWT and Access Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "1759a9d4-ac9a-4eb2-b5d1-a608a43a2cad",
+								"exec": [
+									"var data = JSON.parse(responseBody);",
+									"pm.environment.set(\"ACCESS_TOKEN\", data.access_token);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "f067b81f-65d2-4672-ae41-0ff1338d25f6",
+								"exec": [
+									"// Tips from: https://github.com/kjur/jsrsasign/issues/199",
+									"// https://github.com/kjur/jsrsasign/wiki/Tutorial-for-JWT-generation",
+									"var navigator = {}; //fake a navigator object for the lib",
+									"var window = {}; //fake a window object for the lib",
+									"eval(postman.getGlobalVariable(\"jsrsasign-js\")); //import javascript jsrsasign",
+									"var header = {",
+									"\t\"alg\": \"RS256\"",
+									"};",
+									"",
+									"var ims_cleaned = '';",
+									"if(pm.environment.get(\"IMS\").indexOf(\"https://\") < 0){",
+									"    ims_cleaned =  \"https://\" + pm.environment.get(\"IMS\")",
+									"} else {",
+									"    ims_cleaned = pm.environment.get(\"IMS\")",
+									"}",
+									"",
+									"var data = {",
+									"\t\"exp\": Math.round(87000 + Date.now()/1000),",
+									"\t\"iss\": pm.environment.get(\"IMS_ORG\"),",
+									"\t\"sub\": pm.environment.get(\"TECHNICAL_ACCOUNT_ID\"),",
+									"\t\"aud\": ims_cleaned +\"/c/\"+pm.environment.get(\"API_KEY\")",
+									"};",
+									"",
+									"if(typeof(pm.environment.get(\"META_SCOPE\"))==\"object\"){",
+									"    var meta_scope_to_split = pm.environment.get(\"META_SCOPE\")[0]",
+									"} else {",
+									"    var meta_scope_to_split = pm.environment.get(\"META_SCOPE\")  ",
+									"}",
+									"meta_scopes = meta_scope_to_split.split(\",\");",
+									"",
+									"",
+									"meta_scopes.forEach(function(scope){",
+									"    var meta_scope = ims_cleaned+\"/s/\"+",
+									"                     scope;",
+									"    data[meta_scope] = true;",
+									"});",
+									"var secret = pm.environment.get(\"PRIVATE_KEY\");",
+									"var sHeader = JSON.stringify(header);",
+									"var sPayload = JSON.stringify(data);",
+									"var sJWT = KJUR.jws.JWS.sign(\"RS256\", sHeader, sPayload, secret);",
+									"console.log(sPayload);",
+									"console.log(sJWT);",
+									"pm.environment.set(\"JWT_TOKEN\", sJWT);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "client_id",
+									"value": "{{API_KEY}}",
+									"type": "text"
+								},
+								{
+									"key": "client_secret",
+									"value": "{{CLIENT_SECRET}}",
+									"type": "text"
+								},
+								{
+									"key": "jwt_token",
+									"value": "{{JWT_TOKEN}}",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "https://{{IMS}}/ims/exchange/jwt/",
+							"protocol": "https",
+							"host": [
+								"{{IMS}}"
+							],
+							"path": [
+								"ims",
+								"exchange",
+								"jwt",
+								""
+							]
+						},
+						"description": "Generate a JWT token using the Crypto RS256\nSend to IMS for access_token"
+					},
+					"response": []
+				},
+				{
+					"name": "Schema: Return {TENANT_ID} and Schema Registry usage information",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "7a47b564-1af2-4dfe-b5d8-bde8f48cd2eb",
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.headers.each(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "2c8ea7e2-c975-4822-aa2f-866fa20906df",
+								"exec": [
+									"var data = JSON.parse(responseBody);",
+									"pm.environment.set(\"TENANT_ID\", data.tenantId);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/vnd.adobe.xed+json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"description": "The access token provided after authorization in the format \"Bearer {ACCESS_TOKEN}\"",
+								"key": "Authorization",
+								"type": "string",
+								"value": "Bearer {{ACCESS_TOKEN}}"
+							},
+							{
+								"description": "Your specific API key for your unique Platform configuration ({API_KEY})",
+								"key": "x-api-key",
+								"type": "string",
+								"value": "{{API_KEY}}"
+							},
+							{
+								"description": "Unique Identifier for your IMS Organization ({IMS_ORG})",
+								"key": "x-gw-ims-org-id",
+								"type": "string",
+								"value": "{{IMS_ORG}}"
+							},
+							{
+								"description": "The name of the sandbox in which the operation will take place. See the [sandboxes overview documentation](https://www.adobe.io/apis/experienceplatform/home/permissions-and-sandboxes/permissions-and-sandboxes.html#!api-specification/markdown/narrative/technical_overview/sandboxes/sandboxes-overview.md) for more information.",
+								"key": "x-sandbox-name",
+								"type": "string",
+								"value": "{{SANDBOX_NAME}}"
+							}
+						],
+						"url": {
+							"raw": "{{PLATFORM_GATEWAY}}/data/foundation/schemaregistry/stats",
+							"host": [
+								"{{PLATFORM_GATEWAY}}"
+							],
+							"path": [
+								"data",
+								"foundation",
+								"schemaregistry",
+								"stats"
+							]
+						},
+						"description": "This call will capture the tenantId into a Postman environment variable {{TENANT_ID}}; which is needed for Schema related API calls"
+					},
+					"response": []
+				},
+				{
+					"name": "Import: Create Real-time Data Inlet",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+								"exec": [
+									"var data = JSON.parse(responseBody);",
+									"pm.environment.set(\"INLET_ID\", data[\"inletId\"]);",
+									"pm.environment.set(\"INLET_URL\", data[\"inletUrl\"]);",
+									"pm.environment.set(\"INLET_SOURCE_ID\", data[\"sourceId\"]);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "bearer {{ACCESS_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"type": "text"
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"type": "text"
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/vnd.adobe.xed+json",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"{{UNIQUE_ID}}Streaming Loyalty data\",\n    \"description\": \"Collects streaming data\",\n    \"sourceId\": \"{{UNIQUE_ID}}LoyaltyIngest\",\n    \"dataType\": \"xdm\",\n    \"authenticationRequired\": false\n}"
+						},
+						"url": {
+							"raw": "{{PLATFORM_GATEWAY}}/data/core/edge/inlet",
+							"host": [
+								"{{PLATFORM_GATEWAY}}"
+							],
+							"path": [
+								"data",
+								"core",
+								"edge",
+								"inlet"
+							]
+						},
+						"description": "Creates a streaming endpoint for real-time data ingestion. The same inlet works for both the PROFILE and EVENT data"
+					},
+					"response": []
+				},
+				{
+					"name": "Event Config: Create a new custom event type (loyaltyBalanceUpdate)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "bearer {{ACCESS_TOKEN}}"
+							},
+							{
+								"key": "x-api-key",
+								"type": "text",
+								"value": "{{API_KEY}}"
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"type": "text",
+								"value": "{{IMS_ORG}}"
+							},
+							{
+								"key": "x-sandbox-name",
+								"type": "text",
+								"value": "{{SANDBOX_NAME}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"id\": \"loyaltyBalanceUpdate\",\n  \"imsOrgId\": \"{{IMS_ORG}}\",\n  \"title\": \"Loyalty Balance Update\",\n  \"description\": \"Change to the points balance for a loyalty member\",\n  \"global\": true\n}"
+						},
+						"url": {
+							"raw": "{{PLATFORM_GATEWAY}}/data/core/ups/config/eventTypes",
+							"host": [
+								"{{PLATFORM_GATEWAY}}"
+							],
+							"path": [
+								"data",
+								"core",
+								"ups",
+								"config",
+								"eventTypes"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Event Config: Create a new custom event type (loyaltyLevelUpdate)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "bearer {{ACCESS_TOKEN}}"
+							},
+							{
+								"key": "x-api-key",
+								"type": "text",
+								"value": "{{API_KEY}}"
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"type": "text",
+								"value": "{{IMS_ORG}}"
+							},
+							{
+								"key": "x-sandbox-name",
+								"type": "text",
+								"value": "{{SANDBOX_NAME}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"id\": \"loyaltyLevelUpdate\",\n  \"imsOrgId\": \"{{IMS_ORG}}\",\n  \"title\": \"Loyalty Level Update\",\n  \"description\": \"Change to the program level for a loyalty member\",\n  \"global\": true\n}"
+						},
+						"url": {
+							"raw": "{{PLATFORM_GATEWAY}}/data/core/ups/config/eventTypes",
+							"host": [
+								"{{PLATFORM_GATEWAY}}"
+							],
+							"path": [
+								"data",
+								"core",
+								"ups",
+								"config",
+								"eventTypes"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "1: Create Schema",
+			"item": [
+				{
+					"name": "1a: Create Schema for PROFILE data",
+					"item": [
+						{
+							"name": "Schema: Create Mixin containing Loyalty PROFILE details",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "1759a9d4-ac9a-4eb2-b5d1-a608a43a2cad",
+										"exec": [
+											"var data = JSON.parse(responseBody);",
+											"pm.environment.set(\"MIXIN_ID_PROFILE\", data[\"$id\"]);"
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"id": "f067b81f-65d2-4672-ae41-0ff1338d25f6",
+										"exec": [
+											"if(! pm.environment.get(\"UNIQUE_ID\") )",
+											"    pm.environment.set(\"UNIQUE_ID\", \"\");"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"type": "text",
+										"value": "bearer {{ACCESS_TOKEN}}"
+									},
+									{
+										"key": "x-api-key",
+										"type": "text",
+										"value": "{{API_KEY}}"
+									},
+									{
+										"key": "x-gw-ims-org-id",
+										"type": "text",
+										"value": "{{IMS_ORG}}"
+									},
+									{
+										"key": "x-sandbox-name",
+										"type": "text",
+										"value": "{{SANDBOX_NAME}}"
+									},
+									{
+										"key": "Content-Type",
+										"type": "text",
+										"value": "application/json"
+									},
+									{
+										"key": "Accept",
+										"type": "text",
+										"value": "application/vnd.adobe.xed+json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"type\": \"object\",\n  \"title\": \"{{UNIQUE_ID}}Loyalty Profile Details\",\n  \"description\": \"Loyalty Program Mixin to describe members of the Loyalty Program.\",\n  \"meta:intendedToExtend\": [\n    \"https://ns.adobe.com/xdm/context/profile\"\n  ],\n  \"definitions\": {\n    \"loyalty\": {\n      \"properties\": {\n        \"_{{TENANT_ID}}\": {\n        \t\"type\": \"object\",\n        \t\"properties\": {\n\t\t\t\t\"totalLoyaltyPoints\": {\n\t\t\t\t    \"title\": \"Total Loyalty Points\",\n\t\t\t\t    \"description\": \"\",\n\t\t\t\t    \"type\": \"integer\",\n\t\t\t\t    \"isRequired\": false,\n\t\t\t\t    \"meta:xdmType\": \"int\"\n\t\t\t\t},\n\t\t\t\t\"loyaltyLevel\": {\n\t\t\t\t    \"title\": \"Loyalty Level\",\n\t\t\t\t    \"description\": \"\",\n\t\t\t\t    \"type\": \"string\",\n\t\t\t\t    \"isRequired\": false,\n\t\t\t\t    \"enum\": [\n\t\t\t\t        \"Silver\",\n\t\t\t\t        \"Gold\",\n\t\t\t\t        \"Platinum\",\n\t\t\t\t        \"Diamond\"\n\t\t\t\t    ],\n\t\t\t\t    \"meta:enum\": {\n\t\t\t\t        \"Silver\": \"Silver\",\n\t\t\t\t        \"Gold\": \"Gold\",\n\t\t\t\t        \"Platinum\": \"Platinum\",\n\t\t\t\t        \"Diamond\": \"Diamond\"\n\t\t\t\t    },\n\t\t\t\t    \"meta:xdmType\": \"string\"\n\t\t\t\t},\n\t\t\t\t\"loyaltyID\": {\n\t\t\t\t    \"title\": \"Loyalty ID\",\n\t\t\t\t    \"description\": \"\",\n\t\t\t\t    \"type\": \"string\",\n\t\t\t\t    \"isRequired\": true,\n\t\t\t\t    \"format\": \"email\",\n\t\t\t\t    \"meta:xdmType\": \"string\"\n\t\t\t\t}\n\t\t\t},\n\t\t\t\"meta:xdmType\": \"object\",\n\t\t\t\"required\": [\n\t\t\t\"loyaltyID\"\n\t\t\t]\n          }\n        }\n      }\n    },\n  \"allOf\": [\n    {\n      \"$ref\": \"#/definitions/loyalty\"\n    }\n  ]\n}"
+								},
+								"url": {
+									"raw": "{{PLATFORM_GATEWAY}}/data/foundation/schemaregistry/tenant/mixins/",
+									"host": [
+										"{{PLATFORM_GATEWAY}}"
+									],
+									"path": [
+										"data",
+										"foundation",
+										"schemaregistry",
+										"tenant",
+										"mixins",
+										""
+									]
+								},
+								"description": "The mixin containing the Loyalty details will be created first. This mixin will then be part of the Schema we will create."
+							},
+							"response": []
+						},
+						{
+							"name": "Schema: Create PROFILE Schema for Loyalty data",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "1759a9d4-ac9a-4eb2-b5d1-a608a43a2cad",
+										"exec": [
+											"var data = JSON.parse(responseBody);",
+											"pm.environment.set(\"SCHEMA_ID_PROFILE\", data[\"$id\"]);"
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"id": "f067b81f-65d2-4672-ae41-0ff1338d25f6",
+										"exec": [
+											"if(! pm.environment.get(\"UNIQUE_ID\") )",
+											"    pm.environment.set(\"UNIQUE_ID\", \"\");"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "bearer {{ACCESS_TOKEN}}",
+										"type": "text"
+									},
+									{
+										"key": "x-api-key",
+										"value": "{{API_KEY}}",
+										"type": "text"
+									},
+									{
+										"key": "x-gw-ims-org-id",
+										"value": "{{IMS_ORG}}",
+										"type": "text"
+									},
+									{
+										"key": "x-sandbox-name",
+										"value": "{{SANDBOX_NAME}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									},
+									{
+										"key": "Accept",
+										"value": "application/vnd.adobe.xed+json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"type\": \"object\",\n    \"title\": \"{{UNIQUE_ID}}Loyalty Profiles\",\n    \"description\": \"Profile data plus Loyalty data\",\n    \"allOf\": [\n        {\n            \"$ref\": \"https://ns.adobe.com/xdm/context/profile\"\n        },\n        {\n            \"$ref\": \"https://ns.adobe.com/xdm/context/profile-person-details\"\n        },\n        {\n            \"$ref\": \"https://ns.adobe.com/xdm/context/profile-personal-details\"\n        },\n        {\n        \t\"$ref\": \"{{MIXIN_ID_PROFILE}}\"\n        }\n    ],\n    \"meta:immutableTags\": [\n        \"union\"\n    ]\n}"
+								},
+								"url": {
+									"raw": "{{PLATFORM_GATEWAY}}/data/foundation/schemaregistry/tenant/schemas/",
+									"host": [
+										"{{PLATFORM_GATEWAY}}"
+									],
+									"path": [
+										"data",
+										"foundation",
+										"schemaregistry",
+										"tenant",
+										"schemas",
+										""
+									]
+								},
+								"description": "Create a Schema for importing Loyalty data into the profile.\n\nComponents:\n - XDM Individual Profile (class)\n - Profile person details (mixin; adobe)\n - Profile personal details (mixin; adobe)\n - Loyalty details (mixin; partner)"
+							},
+							"response": []
+						},
+						{
+							"name": "Schema: Set Primary Identity Descriptor for Loyalty Profile Schema",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "bearer {{ACCESS_TOKEN}}",
+										"type": "text"
+									},
+									{
+										"key": "x-api-key",
+										"value": "{{API_KEY}}",
+										"type": "text"
+									},
+									{
+										"key": "x-gw-ims-org-id",
+										"value": "{{IMS_ORG}}",
+										"type": "text"
+									},
+									{
+										"key": "x-sandbox-name",
+										"value": "{{SANDBOX_NAME}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									},
+									{
+										"key": "Accept",
+										"value": "application/vnd.adobe.xed+json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"@type\":\"xdm:descriptorIdentity\",\n    \"xdm:sourceProperty\":\"/_{{TENANT_ID}}/loyaltyID\",\n    \"xdm:property\":\"xdm:code\",\n    \"xdm:isPrimary\":true,\n    \"xdm:namespace\":\"Email\",\n    \"xdm:sourceSchema\":\"{{SCHEMA_ID_PROFILE}}\",\n    \"xdm:sourceVersion\":1\n}"
+								},
+								"url": {
+									"raw": "{{PLATFORM_GATEWAY}}/data/foundation/schemaregistry/tenant/descriptors",
+									"host": [
+										"{{PLATFORM_GATEWAY}}"
+									],
+									"path": [
+										"data",
+										"foundation",
+										"schemaregistry",
+										"tenant",
+										"descriptors"
+									]
+								}
+							},
+							"response": []
+						}
+					],
+					"protocolProfileBehavior": {},
+					"_postman_isSubFolder": true
+				},
+				{
+					"name": "1b: Create Schema for EVENT data",
+					"item": [
+						{
+							"name": "Schema: Create Mixin containing Loyalty EVENT details",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "1759a9d4-ac9a-4eb2-b5d1-a608a43a2cad",
+										"exec": [
+											"var data = JSON.parse(responseBody);",
+											"pm.environment.set(\"MIXIN_ID_EVENT\", data[\"$id\"]);"
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"id": "f067b81f-65d2-4672-ae41-0ff1338d25f6",
+										"exec": [
+											"if(! pm.environment.get(\"UNIQUE_ID\") )",
+											"    pm.environment.set(\"UNIQUE_ID\", \"\");"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "bearer {{ACCESS_TOKEN}}",
+										"type": "text"
+									},
+									{
+										"key": "x-api-key",
+										"value": "{{API_KEY}}",
+										"type": "text"
+									},
+									{
+										"key": "x-gw-ims-org-id",
+										"value": "{{IMS_ORG}}",
+										"type": "text"
+									},
+									{
+										"key": "x-sandbox-name",
+										"value": "{{SANDBOX_NAME}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									},
+									{
+										"key": "Accept",
+										"value": "application/vnd.adobe.xed+json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"type\": \"object\",\n  \"title\": \"{{UNIQUE_ID}}Loyalty Event Details\",\n  \"description\": \"Loyalty Program Mixin to describe events for the Loyalty Program.\",\n  \"meta:intendedToExtend\": [\n    \"https://ns.adobe.com/xdm/context/experienceevent\"\n  ],\n  \"definitions\": {\n    \"loyalty\": {\n      \"properties\": {\n        \"_{{TENANT_ID}}\": {\n        \t\"type\": \"object\",\n        \t\"properties\": {\n\t\t\t\t\"loyaltyLevel\": {\n\t\t\t\t    \"title\": \"Loyalty Level\",\n\t\t\t\t    \"description\": \"\",\n\t\t\t\t    \"type\": \"string\",\n\t\t\t\t    \"isRequired\": false,\n\t\t\t\t    \"enum\": [\n\t\t\t\t        \"Silver\",\n\t\t\t\t        \"Gold\",\n\t\t\t\t        \"Platinum\",\n\t\t\t\t        \"Diamond\"\n\t\t\t\t    ],\n\t\t\t\t    \"meta:enum\": {\n\t\t\t\t        \"Silver\": \"Silver\",\n\t\t\t\t        \"Gold\": \"Gold\",\n\t\t\t\t        \"Platinum\": \"Platinum\",\n\t\t\t\t        \"Diamond\": \"Diamond\"\n\t\t\t\t    },\n\t\t\t\t    \"meta:xdmType\": \"string\"\n\t\t\t\t},\n\t\t\t\t\"totalPoints\": {\n\t\t\t\t    \"title\": \"Total Loyalty Points\",\n\t\t\t\t    \"description\": \"\",\n\t\t\t\t    \"type\": \"integer\",\n\t\t\t\t    \"isRequired\": false,\n\t\t\t\t    \"meta:xdmType\": \"int\"\n\t\t\t\t},\n\t\t\t\t\"pointsEarned\": {\n\t\t\t\t    \"title\": \"New Loyalty Points Earned\",\n\t\t\t\t    \"description\": \"\",\n\t\t\t\t    \"type\": \"integer\",\n\t\t\t\t    \"isRequired\": false,\n\t\t\t\t    \"meta:xdmType\": \"int\"\n\t\t\t\t},\n\t\t\t\t\"transactionID\": {\n\t\t\t\t    \"title\": \"Loyalty Transaction ID\",\n\t\t\t\t    \"description\": \"\",\n\t\t\t\t    \"type\": \"string\",\n\t\t\t\t    \"isRequired\": true,\n\t\t\t\t    \"meta:xdmType\": \"string\"\n\t\t\t\t},\n\t\t\t\t\"loyaltyID\": {\n\t\t\t\t    \"title\": \"Loyalty ID\",\n\t\t\t\t    \"description\": \"\",\n\t\t\t\t    \"type\": \"string\",\n\t\t\t\t    \"isRequired\": true,\n\t\t\t\t    \"format\": \"email\",\n\t\t\t\t    \"meta:xdmType\": \"string\"\n\t\t\t\t}\n\t\t\t},\n\t\t\t\"meta:xdmType\": \"object\",\n\t\t\t\"required\": [\n\t\t\t\"loyaltyID\"\n\t\t\t]\n          }\n        }\n      }\n    },\n  \"allOf\": [\n    {\n      \"$ref\": \"#/definitions/loyalty\"\n    }\n  ]\n}"
+								},
+								"url": {
+									"raw": "{{PLATFORM_GATEWAY}}/data/foundation/schemaregistry/tenant/mixins/",
+									"host": [
+										"{{PLATFORM_GATEWAY}}"
+									],
+									"path": [
+										"data",
+										"foundation",
+										"schemaregistry",
+										"tenant",
+										"mixins",
+										""
+									]
+								},
+								"description": "The mixin containing the Loyalty details will be created first. This mixin will then be part of the Schema we will create."
+							},
+							"response": []
+						},
+						{
+							"name": "Schema: Create EVENT Schema for Loyalty data",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "1759a9d4-ac9a-4eb2-b5d1-a608a43a2cad",
+										"exec": [
+											"var data = JSON.parse(responseBody);",
+											"pm.environment.set(\"SCHEMA_ID_EVENT\", data[\"$id\"]);"
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"id": "f067b81f-65d2-4672-ae41-0ff1338d25f6",
+										"exec": [
+											"if(! pm.environment.get(\"UNIQUE_ID\") )",
+											"    pm.environment.set(\"UNIQUE_ID\", \"\");"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"type": "text",
+										"value": "bearer {{ACCESS_TOKEN}}"
+									},
+									{
+										"key": "x-api-key",
+										"type": "text",
+										"value": "{{API_KEY}}"
+									},
+									{
+										"key": "x-gw-ims-org-id",
+										"type": "text",
+										"value": "{{IMS_ORG}}"
+									},
+									{
+										"key": "x-sandbox-name",
+										"type": "text",
+										"value": "{{SANDBOX_NAME}}"
+									},
+									{
+										"key": "Content-Type",
+										"type": "text",
+										"value": "application/json"
+									},
+									{
+										"key": "Accept",
+										"type": "text",
+										"value": "application/vnd.adobe.xed+json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"type\": \"object\",\n    \"title\": \"{{UNIQUE_ID}}Loyalty Events\",\n    \"description\": \"Loyalty event data\",\n    \"allOf\": [\n        {\n            \"$ref\": \"https://ns.adobe.com/xdm/context/experienceevent\"\n        },\n        {\n        \t\"$ref\": \"{{MIXIN_ID_EVENT}}\"\n        }\n    ],\n    \"meta:immutableTags\": [\n        \"union\"\n    ]\n}"
+								},
+								"url": {
+									"raw": "{{PLATFORM_GATEWAY}}/data/foundation/schemaregistry/tenant/schemas/",
+									"host": [
+										"{{PLATFORM_GATEWAY}}"
+									],
+									"path": [
+										"data",
+										"foundation",
+										"schemaregistry",
+										"tenant",
+										"schemas",
+										""
+									]
+								},
+								"description": "Create a Schema for importing Loyalty data into the profile.\n\nComponents:\n - XDM Individual Profile (class)\n - Profile person details (mixin; adobe)\n - Profile personal details (mixin; adobe)\n - Loyalty details (mixin; partner)"
+							},
+							"response": []
+						},
+						{
+							"name": "Schema: Set Primary Identity Descriptor for Loyalty Event Schema",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "bearer {{ACCESS_TOKEN}}",
+										"type": "text"
+									},
+									{
+										"key": "x-api-key",
+										"value": "{{API_KEY}}",
+										"type": "text"
+									},
+									{
+										"key": "x-gw-ims-org-id",
+										"value": "{{IMS_ORG}}",
+										"type": "text"
+									},
+									{
+										"key": "x-sandbox-name",
+										"value": "{{SANDBOX_NAME}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									},
+									{
+										"key": "Accept",
+										"value": "application/vnd.adobe.xed+json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"@type\":\"xdm:descriptorIdentity\",\n    \"xdm:sourceProperty\":\"/_{{TENANT_ID}}/loyaltyID\",\n    \"xdm:property\":\"xdm:code\",\n    \"xdm:isPrimary\":true,\n    \"xdm:namespace\":\"Email\",\n    \"xdm:sourceSchema\":\"{{SCHEMA_ID_EVENT}}\",\n    \"xdm:sourceVersion\":1\n}"
+								},
+								"url": {
+									"raw": "{{PLATFORM_GATEWAY}}/data/foundation/schemaregistry/tenant/descriptors",
+									"host": [
+										"{{PLATFORM_GATEWAY}}"
+									],
+									"path": [
+										"data",
+										"foundation",
+										"schemaregistry",
+										"tenant",
+										"descriptors"
+									]
+								}
+							},
+							"response": []
+						}
+					],
+					"protocolProfileBehavior": {},
+					"_postman_isSubFolder": true
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "2: Create DataSet",
+			"item": [
+				{
+					"name": "2a: Create DataSet for PROFILE data",
+					"item": [
+						{
+							"name": "DataSet: Create Dataset for Loyalty PROFILE Records",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+										"exec": [
+											"var data = JSON.parse(responseBody);",
+											"var dsId = data[0];",
+											"if(dsId.indexOf(\"@/dataSets/\") === 0)",
+											"    dsId = dsId.substring(11)",
+											"pm.environment.set(\"DATASET_ID_PROFILE\", dsId);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "bearer {{ACCESS_TOKEN}}",
+										"type": "text"
+									},
+									{
+										"key": "x-api-key",
+										"value": "{{API_KEY}}",
+										"type": "text"
+									},
+									{
+										"key": "x-gw-ims-org-id",
+										"value": "{{IMS_ORG}}",
+										"type": "text"
+									},
+									{
+										"key": "x-sandbox-name",
+										"value": "{{SANDBOX_NAME}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									},
+									{
+										"key": "Accept",
+										"value": "application/vnd.adobe.xed+json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"{{UNIQUE_ID}}Loyalty Profiles\",\n    \"description\": \"Profile data plus Loyalty data\",\n    \"schemaRef\": {\n        \"id\": \"{{SCHEMA_ID_PROFILE}}\",\n        \"contentType\": \"application/vnd.adobe.xed-full+json;version=1\"\n    },\n    \"fileDescription\": {\n        \"persisted\": true,\n        \"containerFormat\": \"parquet\",\n        \"format\": \"parquet\"\n    },\n    \"tags\": {\n        \"unifiedIdentity\": [\"enabled:true\"],\n        \"unifiedProfile\": [\"enabled:true\"]\n    }\n}"
+								},
+								"url": {
+									"raw": "{{PLATFORM_GATEWAY}}/data/foundation/catalog/datasets",
+									"host": [
+										"{{PLATFORM_GATEWAY}}"
+									],
+									"path": [
+										"data",
+										"foundation",
+										"catalog",
+										"datasets"
+									]
+								}
+							},
+							"response": []
+						}
+					],
+					"protocolProfileBehavior": {},
+					"_postman_isSubFolder": true
+				},
+				{
+					"name": "2b: Create Dataset for EVENT data",
+					"item": [
+						{
+							"name": "DataSet: Create Dataset for Loyalty EVENT Records",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+										"exec": [
+											"var data = JSON.parse(responseBody);",
+											"var dsId = data[0];",
+											"if(dsId.indexOf(\"@/dataSets/\") === 0)",
+											"    dsId = dsId.substring(11)",
+											"pm.environment.set(\"DATASET_ID_EVENT\", dsId);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "bearer {{ACCESS_TOKEN}}",
+										"type": "text"
+									},
+									{
+										"key": "x-api-key",
+										"value": "{{API_KEY}}",
+										"type": "text"
+									},
+									{
+										"key": "x-gw-ims-org-id",
+										"value": "{{IMS_ORG}}",
+										"type": "text"
+									},
+									{
+										"key": "x-sandbox-name",
+										"value": "{{SANDBOX_NAME}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									},
+									{
+										"key": "Accept",
+										"value": "application/vnd.adobe.xed+json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"{{UNIQUE_ID}}Loyalty Events\",\n    \"description\": \"Loyalty Event data\",\n    \"schemaRef\": {\n        \"id\": \"{{SCHEMA_ID_EVENT}}\",\n        \"contentType\": \"application/vnd.adobe.xed-full+json;version=1\"\n    },\n    \"fileDescription\": {\n        \"persisted\": true,\n        \"containerFormat\": \"parquet\",\n        \"format\": \"parquet\"\n    },\n    \"tags\": {\n        \"unifiedIdentity\": [\"enabled:true\"],\n        \"unifiedProfile\": [\"enabled:true\"]\n    }\n}"
+								},
+								"url": {
+									"raw": "{{PLATFORM_GATEWAY}}/data/foundation/catalog/datasets",
+									"host": [
+										"{{PLATFORM_GATEWAY}}"
+									],
+									"path": [
+										"data",
+										"foundation",
+										"catalog",
+										"datasets"
+									]
+								}
+							},
+							"response": []
+						}
+					],
+					"protocolProfileBehavior": {},
+					"_postman_isSubFolder": true
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "3: Real-time import",
+			"item": [
+				{
+					"name": "3a: Real-time import for PROFILE data",
+					"item": [
+						{
+							"name": "Import: Stream to PROFILE DataSet",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"id": "e2e4434f-9e2e-4651-aab0-7a39f8c37a4b",
+										"exec": [
+											"var profile_id = pm.environment.get(\"PROFILE_ID\");",
+											"if(!profile_id)",
+											"    pm.environment.set(\"PROFILE_ID\",\"jdoe@testprofile.com\");"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Cache-Control",
+										"value": "no-cache",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"header\": {\n        \"schemaRef\": {\n            \"id\": \"{{SCHEMA_ID_PROFILE}}\",\n            \"contentType\": \"application/vnd.adobe.xed-full+json;version=1\"\n        },\n        \"imsOrgId\": \"{{IMS_ORG}}\",\n        \"source\": {\n            \"name\": \"{{INLET_SOURCE_ID}}\"\n        },\n        \"datasetId\": \"{{DATASET_ID_PROFILE}}\"\n    },\n    \"body\": {\n        \"xdmMeta\": {\n            \"schemaRef\": {\n                \"id\": \"{{SCHEMA_ID_PROFILE}}\",\n                \"contentType\": \"application/vnd.adobe.xed-full+json;version=1\"\n            }\n        },\n        \"xdmEntity\": {\n        \t\"_exchangeinternal\": {\n                \"loyaltyID\": \"{{PROFILE_ID}}\",\n                \"loyaltyLevel\": \"Silver\",\n                \"totalLoyaltyPoints\": 12000\n            },\n            \"person\": {\n                \"name\": {\n                    \"firstName\": \"Jane\",\n                    \"middleName\": \"B\",\n                    \"lastName\": \"Doe\"\n                },\n                \"birthDate\": \"1980-05-10\",\n                \"gender\": \"female\"\n            },\n            \"personalEmail\": {\n                \"primary\": false,\n                \"address\": \"{{PROFILE_ID}}\",\n                \"type\": \"personal\",\n                \"status\": \"active\"\n            }\n        }\n    }\n}"
+								},
+								"url": {
+									"raw": "{{INLET_URL}}?synchronousValidation=true",
+									"host": [
+										"{{INLET_URL}}"
+									],
+									"query": [
+										{
+											"key": "synchronousValidation",
+											"value": "true"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					],
+					"protocolProfileBehavior": {},
+					"_postman_isSubFolder": true
+				},
+				{
+					"name": "3b: Real-time import for EVENT data",
+					"item": [
+						{
+							"name": "Import: Stream to EVENT DataSet",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"id": "e2e4434f-9e2e-4651-aab0-7a39f8c37a4b",
+										"exec": [
+											"var profile_id = pm.environment.get(\"PROFILE_ID\");",
+											"if(!profile_id)",
+											"    pm.environment.set(\"PROFILE_ID\",\"jdoe@testprofile.com\");",
+											"    ",
+											"    ",
+											"/*  Create a random number to be the unique event _id  */",
+											"var min = 111111111;",
+											"var max = 9999999999999;",
+											"var randomNumber = Math.random() * (max - min) + min;",
+											"pm.variables.set(\"RANDOM_EVENT_ID\", randomNumber);",
+											"",
+											"",
+											"/*  Create an acceptibly formatted timestamp */",
+											"var date = new Date();",
+											"",
+											"var month = date.getUTCMonth();",
+											"var day = date.getUTCDate();",
+											"var hour = date.getUTCHours();",
+											"var min = date.getUTCMinutes();",
+											"var sec = date.getUTCSeconds();",
+											"",
+											"month = (month < 9 ? \"0\" : \"\") + (month+1);",
+											"day = (day < 10 ? \"0\" : \"\") + day;",
+											"hour = (hour < 10 ? \"0\" : \"\") + hour;",
+											"min = (min < 10 ? \"0\" : \"\") + min;",
+											"sec = (sec < 10 ? \"0\" : \"\") + sec;",
+											"",
+											"var str = date.getFullYear() + \"-\" + month + \"-\" + day + \"T\" +  hour + \":\" + min + \":\" + sec + \"Z\";",
+											"pm.variables.set(\"TIMESTAMP\", str);",
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Cache-Control",
+										"type": "text",
+										"value": "no-cache"
+									},
+									{
+										"key": "Content-Type",
+										"type": "text",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"header\": {\n        \"schemaRef\": {\n            \"id\": \"{{SCHEMA_ID_EVENT}}\",\n            \"contentType\": \"application/vnd.adobe.xed-full+json;version=1\"\n        },\n        \"imsOrgId\": \"{{IMS_ORG}}\",\n        \"source\": {\n            \"name\": \"{{INLET_SOURCE_ID}}\"\n        },\n        \"datasetId\": \"{{DATASET_ID_EVENT}}\"\n    },\n    \"body\": {\n        \"xdmMeta\": {\n            \"schemaRef\": {\n                \"id\": \"{{SCHEMA_ID_EVENT}}\",\n                \"contentType\": \"application/vnd.adobe.xed-full+json;version=1\"\n            }\n        },\n        \"xdmEntity\": {\n        \t\"_exchangeinternal\": {\n                \"loyaltyID\": \"{{PROFILE_ID}}\",\n                \"pointsEarned\": 2000,\n                \"totalPoints\": 16500,\n                \"loyaltyLevel\":\"Silver\",\n                \"transactionID\": \"purchase_12345\"\n            },\n            \"_id\": \"{{RANDOM_EVENT_ID}}\",\n            \"eventType\": \"loyaltyBalanceUpdate\",\n            \"timestamp\":\"{{TIMESTAMP}}\"\n        }\n    }\n}"
+								},
+								"url": {
+									"raw": "{{INLET_URL}}?synchronousValidation=true",
+									"host": [
+										"{{INLET_URL}}"
+									],
+									"query": [
+										{
+											"key": "synchronousValidation",
+											"value": "true"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					],
+					"protocolProfileBehavior": {},
+					"_postman_isSubFolder": true
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "4: Batch import",
+			"item": [
+				{
+					"name": "4a: Batch import for PROFILE data",
+					"item": [
+						{
+							"name": "Import: Create a Batch for PROFILE data",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+										"exec": [
+											"var data = JSON.parse(responseBody);",
+											"pm.environment.set(\"BATCH_ID_PROFILE\", data[\"id\"]);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"type": "text",
+										"value": "bearer {{ACCESS_TOKEN}}"
+									},
+									{
+										"key": "x-api-key",
+										"type": "text",
+										"value": "{{API_KEY}}"
+									},
+									{
+										"key": "x-gw-ims-org-id",
+										"type": "text",
+										"value": "{{IMS_ORG}}"
+									},
+									{
+										"key": "x-sandbox-name",
+										"type": "text",
+										"value": "{{SANDBOX_NAME}}"
+									},
+									{
+										"key": "Content-Type",
+										"type": "text",
+										"value": "application/json"
+									},
+									{
+										"key": "Accept",
+										"type": "text",
+										"value": "application/vnd.adobe.xed+json",
+										"disabled": true
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n\t\"datasetId\": \"{{DATASET_ID_PROFILE}}\",\n\t\"inputFormat\": {\n\t\t\"format\": \"json\",\n\t\t\"isMultiLineJson\": true\n\t}\n}"
+								},
+								"url": {
+									"raw": "{{PLATFORM_GATEWAY}}/data/foundation/import/batches",
+									"host": [
+										"{{PLATFORM_GATEWAY}}"
+									],
+									"path": [
+										"data",
+										"foundation",
+										"import",
+										"batches"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Import: Upload file to Batch for PROFILE data",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"id": "3e097a6a-52a3-484b-9a0a-d0be174256cc",
+										"exec": [
+											"var file_name = pm.environment.get(\"IMPORT_BATCH_FILE_NAME\");",
+											"if(!file_name)",
+											"    pm.environment.set(\"IMPORT_BATCH_FILE_NAME\",\"my-batch.json\");"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"type": "text",
+										"value": "bearer {{ACCESS_TOKEN}}"
+									},
+									{
+										"key": "x-api-key",
+										"type": "text",
+										"value": "{{API_KEY}}"
+									},
+									{
+										"key": "x-gw-ims-org-id",
+										"type": "text",
+										"value": "{{IMS_ORG}}"
+									},
+									{
+										"key": "x-sandbox-name",
+										"type": "text",
+										"value": "{{SANDBOX_NAME}}"
+									},
+									{
+										"key": "Content-Type",
+										"type": "text",
+										"value": "application/octet-stream"
+									},
+									{
+										"key": "Accept",
+										"type": "text",
+										"value": "application/vnd.adobe.xed+json",
+										"disabled": true
+									}
+								],
+								"body": {
+									"mode": "file",
+									"file": {
+										"src": "/Users/sgubler/Documents/AEP/AEP keystone guide/AEP loyalty profiles 2.json"
+									}
+								},
+								"url": {
+									"raw": "{{PLATFORM_GATEWAY}}/data/foundation/import/batches/{{BATCH_ID_PROFILE}}/datasets/{{DATASET_ID_PROFILE}}/files/{{IMPORT_BATCH_FILE_NAME}}",
+									"host": [
+										"{{PLATFORM_GATEWAY}}"
+									],
+									"path": [
+										"data",
+										"foundation",
+										"import",
+										"batches",
+										"{{BATCH_ID_PROFILE}}",
+										"datasets",
+										"{{DATASET_ID_PROFILE}}",
+										"files",
+										"{{IMPORT_BATCH_FILE_NAME}}"
+									]
+								},
+								"description": "Under \"Body\", choose \"binary\" and select the \"loyalty_import_batch.json\" file downloaded with this collection\n\nExample data can be generated here https://mockaroo.com/22f6f910"
+							},
+							"response": []
+						},
+						{
+							"name": "Import: Complete a Batch for PROFILE data",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"type": "text",
+										"value": "bearer {{ACCESS_TOKEN}}"
+									},
+									{
+										"key": "x-api-key",
+										"type": "text",
+										"value": "{{API_KEY}}"
+									},
+									{
+										"key": "x-gw-ims-org-id",
+										"type": "text",
+										"value": "{{IMS_ORG}}"
+									},
+									{
+										"key": "x-sandbox-name",
+										"type": "text",
+										"value": "{{SANDBOX_NAME}}"
+									},
+									{
+										"key": "Content-Type",
+										"type": "text",
+										"value": "application/json"
+									},
+									{
+										"key": "Accept",
+										"type": "text",
+										"value": "application/vnd.adobe.xed+json",
+										"disabled": true
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "{{PLATFORM_GATEWAY}}/data/foundation/import/batches/{{BATCH_ID_PROFILE}}?action=COMPLETE",
+									"host": [
+										"{{PLATFORM_GATEWAY}}"
+									],
+									"path": [
+										"data",
+										"foundation",
+										"import",
+										"batches",
+										"{{BATCH_ID_PROFILE}}"
+									],
+									"query": [
+										{
+											"key": "action",
+											"value": "COMPLETE"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Import: Check the Status of a Batch for PROFILE data",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"type": "text",
+										"value": "bearer {{ACCESS_TOKEN}}"
+									},
+									{
+										"key": "x-api-key",
+										"type": "text",
+										"value": "{{API_KEY}}"
+									},
+									{
+										"key": "x-gw-ims-org-id",
+										"type": "text",
+										"value": "{{IMS_ORG}}"
+									},
+									{
+										"key": "x-sandbox-name",
+										"type": "text",
+										"value": "{{SANDBOX_NAME}}"
+									},
+									{
+										"key": "Content-Type",
+										"type": "text",
+										"value": "application/json",
+										"disabled": true
+									},
+									{
+										"key": "Accept",
+										"type": "text",
+										"value": "application/vnd.adobe.xed+json",
+										"disabled": true
+									}
+								],
+								"url": {
+									"raw": "{{PLATFORM_GATEWAY}}/data/foundation/catalog/batch/{{BATCH_ID_PROFILE}}",
+									"host": [
+										"{{PLATFORM_GATEWAY}}"
+									],
+									"path": [
+										"data",
+										"foundation",
+										"catalog",
+										"batch",
+										"{{BATCH_ID_PROFILE}}"
+									]
+								}
+							},
+							"response": []
+						}
+					],
+					"protocolProfileBehavior": {},
+					"_postman_isSubFolder": true
+				},
+				{
+					"name": "4b: Batch import for EVENT data",
+					"item": [
+						{
+							"name": "Import: Create a Batch for EVENT data",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+										"exec": [
+											"var data = JSON.parse(responseBody);",
+											"pm.environment.set(\"BATCH_ID_EVENT\", data[\"id\"]);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"type": "text",
+										"value": "bearer {{ACCESS_TOKEN}}"
+									},
+									{
+										"key": "x-api-key",
+										"type": "text",
+										"value": "{{API_KEY}}"
+									},
+									{
+										"key": "x-gw-ims-org-id",
+										"type": "text",
+										"value": "{{IMS_ORG}}"
+									},
+									{
+										"key": "x-sandbox-name",
+										"type": "text",
+										"value": "{{SANDBOX_NAME}}"
+									},
+									{
+										"key": "Content-Type",
+										"type": "text",
+										"value": "application/json"
+									},
+									{
+										"key": "Accept",
+										"type": "text",
+										"value": "application/vnd.adobe.xed+json",
+										"disabled": true
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n\t\"datasetId\": \"{{DATASET_ID_EVENT}}\",\n\t\"inputFormat\": {\n\t\t\"format\": \"json\",\n\t\t\"isMultiLineJson\": true\n\t}\n}"
+								},
+								"url": {
+									"raw": "{{PLATFORM_GATEWAY}}/data/foundation/import/batches",
+									"host": [
+										"{{PLATFORM_GATEWAY}}"
+									],
+									"path": [
+										"data",
+										"foundation",
+										"import",
+										"batches"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Import: Upload file to Batch for EVENT data",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"id": "3e097a6a-52a3-484b-9a0a-d0be174256cc",
+										"exec": [
+											"var file_name = pm.environment.get(\"IMPORT_BATCH_FILE_NAME\");",
+											"if(!file_name)",
+											"    pm.environment.set(\"IMPORT_BATCH_FILE_NAME\",\"my-batch.json\");"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"type": "text",
+										"value": "bearer {{ACCESS_TOKEN}}"
+									},
+									{
+										"key": "x-api-key",
+										"type": "text",
+										"value": "{{API_KEY}}"
+									},
+									{
+										"key": "x-gw-ims-org-id",
+										"type": "text",
+										"value": "{{IMS_ORG}}"
+									},
+									{
+										"key": "x-sandbox-name",
+										"type": "text",
+										"value": "{{SANDBOX_NAME}}"
+									},
+									{
+										"key": "Content-Type",
+										"type": "text",
+										"value": "application/octet-stream"
+									},
+									{
+										"key": "Accept",
+										"type": "text",
+										"value": "application/vnd.adobe.xed+json",
+										"disabled": true
+									}
+								],
+								"body": {
+									"mode": "file",
+									"file": {
+										"src": "/Users/sgubler/Documents/AEP/AEP keystone guide/AEP loyalty events batch data.json"
+									}
+								},
+								"url": {
+									"raw": "{{PLATFORM_GATEWAY}}/data/foundation/import/batches/{{BATCH_ID_EVENT}}/datasets/{{DATASET_ID_EVENT}}/files/{{IMPORT_BATCH_FILE_NAME}}",
+									"host": [
+										"{{PLATFORM_GATEWAY}}"
+									],
+									"path": [
+										"data",
+										"foundation",
+										"import",
+										"batches",
+										"{{BATCH_ID_EVENT}}",
+										"datasets",
+										"{{DATASET_ID_EVENT}}",
+										"files",
+										"{{IMPORT_BATCH_FILE_NAME}}"
+									]
+								},
+								"description": "Under \"Body\", choose \"binary\" and select the \"loyalty_import_batch.json\" file downloaded with this collection\n\nSample data can be generated with https://mockaroo.com/d419b8a0"
+							},
+							"response": []
+						},
+						{
+							"name": "Import: Complete a Batch for EVENT data",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"type": "text",
+										"value": "bearer {{ACCESS_TOKEN}}"
+									},
+									{
+										"key": "x-api-key",
+										"type": "text",
+										"value": "{{API_KEY}}"
+									},
+									{
+										"key": "x-gw-ims-org-id",
+										"type": "text",
+										"value": "{{IMS_ORG}}"
+									},
+									{
+										"key": "x-sandbox-name",
+										"type": "text",
+										"value": "{{SANDBOX_NAME}}"
+									},
+									{
+										"key": "Content-Type",
+										"type": "text",
+										"value": "application/json"
+									},
+									{
+										"key": "Accept",
+										"type": "text",
+										"value": "application/vnd.adobe.xed+json",
+										"disabled": true
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "{{PLATFORM_GATEWAY}}/data/foundation/import/batches/{{BATCH_ID_EVENT}}?action=COMPLETE",
+									"host": [
+										"{{PLATFORM_GATEWAY}}"
+									],
+									"path": [
+										"data",
+										"foundation",
+										"import",
+										"batches",
+										"{{BATCH_ID_EVENT}}"
+									],
+									"query": [
+										{
+											"key": "action",
+											"value": "COMPLETE"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Import: Check the Status of a Batch for EVENT data",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"type": "text",
+										"value": "bearer {{ACCESS_TOKEN}}"
+									},
+									{
+										"key": "x-api-key",
+										"type": "text",
+										"value": "{{API_KEY}}"
+									},
+									{
+										"key": "x-gw-ims-org-id",
+										"type": "text",
+										"value": "{{IMS_ORG}}"
+									},
+									{
+										"key": "x-sandbox-name",
+										"type": "text",
+										"value": "{{SANDBOX_NAME}}"
+									},
+									{
+										"key": "Content-Type",
+										"type": "text",
+										"value": "application/json",
+										"disabled": true
+									},
+									{
+										"key": "Accept",
+										"type": "text",
+										"value": "application/vnd.adobe.xed+json",
+										"disabled": true
+									}
+								],
+								"url": {
+									"raw": "{{PLATFORM_GATEWAY}}/data/foundation/catalog/batch/{{BATCH_ID_EVENT}}",
+									"host": [
+										"{{PLATFORM_GATEWAY}}"
+									],
+									"path": [
+										"data",
+										"foundation",
+										"catalog",
+										"batch",
+										"{{BATCH_ID_EVENT}}"
+									]
+								}
+							},
+							"response": []
+						}
+					],
+					"protocolProfileBehavior": {},
+					"_postman_isSubFolder": true
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "5: Profile lookup",
+			"item": [
+				{
+					"name": "5a: Real-time lookup PROFILE data",
+					"item": [
+						{
+							"name": "Export: Retrieve PROFILE data for a customer profile",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"id": "4e7b4c36-7d95-45c0-8d2c-43fdd5bdac73",
+										"exec": [
+											"var profile_ID = pm.environment.get(\"PROFILE_ID\");",
+											"//pm.variables.set(\"PROFILE_ID_URIENCODED\", profile_ID);",
+											"pm.variables.set(\"PROFILE_ID_URIENCODED\", encodeURIComponent(profile_ID));",
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Cache-Control",
+										"value": "no-cache",
+										"type": "text"
+									},
+									{
+										"key": "Authorization",
+										"value": "bearer {{ACCESS_TOKEN}}",
+										"type": "text"
+									},
+									{
+										"key": "x-api-key",
+										"value": "{{API_KEY}}",
+										"type": "text"
+									},
+									{
+										"key": "x-gw-ims-org-id",
+										"value": "{{IMS_ORG}}",
+										"type": "text"
+									},
+									{
+										"key": "x-sandbox-name",
+										"value": "{{SANDBOX_NAME}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "{{PLATFORM_GATEWAY}}/data/core/ups/access/entities?schema.name=_xdm.context.profile&entityId={{PROFILE_ID_URIENCODED}}&entityIdNS=email",
+									"host": [
+										"{{PLATFORM_GATEWAY}}"
+									],
+									"path": [
+										"data",
+										"core",
+										"ups",
+										"access",
+										"entities"
+									],
+									"query": [
+										{
+											"key": "schema.name",
+											"value": "_xdm.context.profile"
+										},
+										{
+											"key": "entityId",
+											"value": "{{PROFILE_ID_URIENCODED}}"
+										},
+										{
+											"key": "entityIdNS",
+											"value": "email"
+										}
+									]
+								},
+								"description": "Query a profile based on the email address in the PROFILE_ID environment variable. This is the same profile that should have been created by the streaming import call made previously."
+							},
+							"response": []
+						}
+					],
+					"protocolProfileBehavior": {},
+					"_postman_isSubFolder": true
+				},
+				{
+					"name": "5b: Real-time lookup EVENT data",
+					"item": [
+						{
+							"name": "Export: Retrieve EVENT data for a customer profile",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "prerequest",
+									"script": {
+										"id": "4e7b4c36-7d95-45c0-8d2c-43fdd5bdac73",
+										"exec": [
+											"var profile_ID = pm.environment.get(\"PROFILE_ID\");",
+											"//pm.variables.set(\"PROFILE_ID_URIENCODED\", profile_ID);",
+											"pm.variables.set(\"PROFILE_ID_URIENCODED\", encodeURIComponent(profile_ID));",
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Cache-Control",
+										"type": "text",
+										"value": "no-cache"
+									},
+									{
+										"key": "Authorization",
+										"type": "text",
+										"value": "bearer {{ACCESS_TOKEN}}"
+									},
+									{
+										"key": "x-api-key",
+										"type": "text",
+										"value": "{{API_KEY}}"
+									},
+									{
+										"key": "x-gw-ims-org-id",
+										"type": "text",
+										"value": "{{IMS_ORG}}"
+									},
+									{
+										"key": "x-sandbox-name",
+										"type": "text",
+										"value": "{{SANDBOX_NAME}}"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": ""
+								},
+								"url": {
+									"raw": "{{PLATFORM_GATEWAY}}/data/core/ups/access/entities?schema.name=_xdm.context.experienceevent&relatedSchema.name=_xdm.context.profile&entityId={{PROFILE_ID_URIENCODED}}&entityIdNS=email",
+									"host": [
+										"{{PLATFORM_GATEWAY}}"
+									],
+									"path": [
+										"data",
+										"core",
+										"ups",
+										"access",
+										"entities"
+									],
+									"query": [
+										{
+											"key": "schema.name",
+											"value": "_xdm.context.experienceevent"
+										},
+										{
+											"key": "relatedSchema.name",
+											"value": "_xdm.context.profile"
+										},
+										{
+											"key": "entityId",
+											"value": "{{PROFILE_ID_URIENCODED}}"
+										},
+										{
+											"key": "entityIdNS",
+											"value": "email"
+										}
+									]
+								},
+								"description": "Query a profile based on the email address in the PROFILE_ID environment variable. This is the same profile that should have been created by the streaming import call made previously."
+							},
+							"response": []
+						}
+					],
+					"protocolProfileBehavior": {},
+					"_postman_isSubFolder": true
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "X: Supplementary calls",
+			"item": [
+				{
+					"name": "X Schema: Get all tenant Schemas",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "1759a9d4-ac9a-4eb2-b5d1-a608a43a2cad",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "f067b81f-65d2-4672-ae41-0ff1338d25f6",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "bearer {{ACCESS_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"type": "text"
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/vnd.adobe.xed+json",
+								"type": "text"
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "{{PLATFORM_GATEWAY}}/data/foundation/schemaregistry/tenant/schemas/",
+							"host": [
+								"{{PLATFORM_GATEWAY}}"
+							],
+							"path": [
+								"data",
+								"foundation",
+								"schemaregistry",
+								"tenant",
+								"schemas",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "X Schema: Get all tenant Mixins",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "1759a9d4-ac9a-4eb2-b5d1-a608a43a2cad",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "f067b81f-65d2-4672-ae41-0ff1338d25f6",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "bearer {{ACCESS_TOKEN}}"
+							},
+							{
+								"key": "x-api-key",
+								"type": "text",
+								"value": "{{API_KEY}}"
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"type": "text",
+								"value": "{{IMS_ORG}}"
+							},
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/vnd.adobe.xed+json"
+							},
+							{
+								"key": "x-sandbox-name",
+								"type": "text",
+								"value": "{{SANDBOX_NAME}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "{{PLATFORM_GATEWAY}}/data/foundation/schemaregistry/tenant/mixins/",
+							"host": [
+								"{{PLATFORM_GATEWAY}}"
+							],
+							"path": [
+								"data",
+								"foundation",
+								"schemaregistry",
+								"tenant",
+								"mixins",
+								""
+							]
+						},
+						"description": "Generate a JWT token using the Crypto RS256\nSend to IMS for access_token"
+					},
+					"response": []
+				},
+				{
+					"name": "X Remove a tenant-defined schema from the registry",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "e1bbe625-5c5a-4aa2-9f35-a9e98b38b5dd",
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.headers.each(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/vnd.adobe.xed+json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"description": "The access token provided after authorization in the format \"Bearer {ACCESS_TOKEN}\"",
+								"key": "Authorization",
+								"type": "string",
+								"value": "Bearer {{ACCESS_TOKEN}}"
+							},
+							{
+								"description": "Your specific API key for your unique Platform configuration ({API_KEY})",
+								"key": "x-api-key",
+								"type": "string",
+								"value": "{{API_KEY}}"
+							},
+							{
+								"description": "Unique Identifier for your IMS Organization ({IMS_ORG})",
+								"key": "x-gw-ims-org-id",
+								"type": "string",
+								"value": "{{IMS_ORG}}"
+							},
+							{
+								"description": "The name of the sandbox in which the operation will take place. See the [sandboxes overview documentation](https://www.adobe.io/apis/experienceplatform/home/permissions-and-sandboxes/permissions-and-sandboxes.html#!api-specification/markdown/narrative/technical_overview/sandboxes/sandboxes-overview.md) for more information.",
+								"key": "x-sandbox-name",
+								"type": "string",
+								"value": "{{SANDBOX_NAME}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "{{PLATFORM_GATEWAY}}/data/foundation/schemaregistry/tenant/schemas/:$id",
+							"host": [
+								"{{PLATFORM_GATEWAY}}"
+							],
+							"path": [
+								"data",
+								"foundation",
+								"schemaregistry",
+								"tenant",
+								"schemas",
+								":$id"
+							],
+							"variable": [
+								{
+									"key": "$id",
+									"value": "https%3A%2F%2Fns.adobe.com%2Fexchangeinternal%2Fschemas%2Fd91e4880fa6113dcc4b35fa8eb68a872"
+								}
+							]
+						},
+						"description": "<p>Remove an existing schema by performing a DELETE request to the $id of the schema being removed.</p><br/><p>A successful deletion returns an empty response body and HTTP Status Code 204 (No-content).</p>"
+					},
+					"response": []
+				},
+				{
+					"name": "X Remove a tenant-defined mixin from the registry",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "e1bbe625-5c5a-4aa2-9f35-a9e98b38b5dd",
+								"exec": [
+									"/** Begin Adobe-provided Pre-Request Scripts **/",
+									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
+									"pm.request.headers.each(header => {",
+									"    if (header.value.startsWith(\"{{\") && header.value.endsWith(\"}}\")) {",
+									"        if (!pm.variables.get(header.value.substring(2, header.value.length - 2))) { pm.request.headers.remove(header.key); }",
+									"    }",
+									"});",
+									"",
+									"// Do not send HTTP URL Query Parameters with empty variables, as Postman will send the literal variable name",
+									"pm.request.url.query.remove(q => { ",
+									"    if (q.value.startsWith(\"{{\") && q.value.endsWith(\"}}\")) {",
+									"        return !pm.variables.get(q.value.substring(2, q.value.length - 2));",
+									"    } ",
+									"});",
+									"/** End Adobe-provided Pre-Request Scripts **/"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/vnd.adobe.xed+json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{ACCESS_TOKEN}}",
+								"description": "The access token provided after authorization in the format \"Bearer {ACCESS_TOKEN}\"",
+								"type": "string"
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"description": "Your specific API key for your unique Platform configuration ({API_KEY})",
+								"type": "string"
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"description": "Unique Identifier for your IMS Organization ({IMS_ORG})",
+								"type": "string"
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"description": "The name of the sandbox in which the operation will take place. See the [sandboxes overview documentation](https://www.adobe.io/apis/experienceplatform/home/permissions-and-sandboxes/permissions-and-sandboxes.html#!api-specification/markdown/narrative/technical_overview/sandboxes/sandboxes-overview.md) for more information.",
+								"type": "string"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "{{PLATFORM_GATEWAY}}/data/foundation/schemaregistry/tenant/mixins/:$id",
+							"host": [
+								"{{PLATFORM_GATEWAY}}"
+							],
+							"path": [
+								"data",
+								"foundation",
+								"schemaregistry",
+								"tenant",
+								"mixins",
+								":$id"
+							],
+							"variable": [
+								{
+									"key": "$id",
+									"value": "https%3A%2F%2Fns.adobe.com%2Fexchangeinternal%2Fmixins%2Fb86936a70cc84e50b82ef4707971d585"
+								}
+							]
+						},
+						"description": "<p>Remove an existing schema by performing a DELETE request to the $id of the schema being removed.</p><br/><p>A successful deletion returns an empty response body and HTTP Status Code 204 (No-content).</p>"
+					},
+					"response": []
+				},
+				{
+					"name": "X DataSet: Get all DataSets",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "1759a9d4-ac9a-4eb2-b5d1-a608a43a2cad",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "f067b81f-65d2-4672-ae41-0ff1338d25f6",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "bearer {{ACCESS_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"type": "text"
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/vnd.adobe.xed+json",
+								"type": "text"
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "{{PLATFORM_GATEWAY}}/data/foundation/catalog/dataSets",
+							"host": [
+								"{{PLATFORM_GATEWAY}}"
+							],
+							"path": [
+								"data",
+								"foundation",
+								"catalog",
+								"dataSets"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "X Import: Get Data Inlet list",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "bearer {{ACCESS_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"type": "text"
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"type": "text"
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{PLATFORM_GATEWAY}}/data/core/edge/inlet",
+							"host": [
+								"{{PLATFORM_GATEWAY}}"
+							],
+							"path": [
+								"data",
+								"core",
+								"edge",
+								"inlet"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "X Event Config: GET eventTypes",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "bearer {{ACCESS_TOKEN}}"
+							},
+							{
+								"key": "x-api-key",
+								"type": "text",
+								"value": "{{API_KEY}}"
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"type": "text",
+								"value": "{{IMS_ORG}}"
+							},
+							{
+								"key": "x-sandbox-name",
+								"type": "text",
+								"value": "{{SANDBOX_NAME}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{PLATFORM_GATEWAY}}/data/core/ups/config/eventTypes",
+							"host": [
+								"{{PLATFORM_GATEWAY}}"
+							],
+							"path": [
+								"data",
+								"core",
+								"ups",
+								"config",
+								"eventTypes"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		}
+	],
+	"protocolProfileBehavior": {}
+}
