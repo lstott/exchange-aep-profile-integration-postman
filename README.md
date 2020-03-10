@@ -18,4 +18,22 @@ The collection can be downloaded [here](https://github.com/Adobe-Marketing-Cloud
 
 Follow [this guide](https://www.adobe.io/apis/experienceplatform/console/docs.html#!AdobeDocs/adobeio-console/master/integrations.md) -- specifically the section titled "Creating an Integration in Adobe I/O Console"
 
-###
+### Download and import the environment from Adobe.io console
+
+The Adobe.io console will provide you with a Postman environment that contains most of the configuration you need. 
+
+To download the environment file...
+
+1. Navigate to your Integration Overview page at https://console.adobe.io/integrations
+2. Click on the "Export Details to Postman" button
+3. Save the environment json file to your local machine
+4. In Postman use File > Import... to import the environment file
+
+### Modify the environment
+
+Add the following variables to your environment. Learn how to [manage Postman environment variables](https://learning.postman.com/docs/postman/variables-and-environments/variables/#defining-variables). 
+
+* PLATFORM_GATEWAY = https://platform.adobe.io
+* SANDBOX_NAME = _your_sandbox_name_
+
+
