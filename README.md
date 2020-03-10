@@ -31,9 +31,15 @@ To download the environment file...
 
 ### Modify the environment
 
-Add the following variables to your environment. Learn how to [manage Postman environment variables](https://learning.postman.com/docs/postman/variables-and-environments/variables/#defining-variables). 
+You will need to make a few changes to the enviroment download from Adobe.io console. If needed, you can learn how to [manage Postman environment variables](https://learning.postman.com/docs/postman/variables-and-environments/variables/#defining-variables).
+
+Add the following variables to your environment.  
 
 * PLATFORM_GATEWAY = https://platform.adobe.io
 * SANDBOX_NAME = _your_sandbox_name_
+
+Modify the following variables.
+
+* PRIVATE_KEY = _full_text_of_private_key
 
 
