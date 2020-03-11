@@ -12,7 +12,7 @@ Before executing the API calls in this collection you will need to...
 
 ### Download and import this collection into Postman
 
-The collection can be downloaded [here](https://github.com/Adobe-Marketing-Cloud/exchange-aep-profile-integration-postman/blob/master/AEP%20-%20Profile%20integration%20for%20ISVs%202020-03-06.postman_collection.json). Import the collection in Postman using File > Import...
+The collection can be downloaded [here](../master/AEP%20-%20Profile%20integration%20for%20ISVs%202020-03-06.postman_collection.json). Import the collection in Postman using File > Import...
 
 ### Create an Integration using the Adobe.io console
 
@@ -109,6 +109,42 @@ Creates a new Dataset for collecting the Loyalty event records, using streaming 
 ### 3b: Real-time import for EVENT data (folder)
 
 #### Import: Stream to EVENT DataSet
+
+### 4a: Batch import for PROFILE data (folder)
+
+#### Import: Create a Batch for PROFILE data
+
+#### Import: Upload file to Batch for PROFILE data
+
+#### Import: Complete a Batch for PROFILE data
+
+#### Import: Check the Status of a Batch for PROFILE data
+
+### 4b: Batch import for EVENT data (folder)
+
+#### Import: Create a Batch for EVENT data
+
+#### Import: Upload file to Batch for EVENT data
+
+#### Import: Complete a Batch for EVENT data
+
+#### Import: Check the Status of a Batch for EVENT data
+
+### 5a: Real-time lookup PROFILE data (folder)
+
+#### Export: Retrieve PROFILE data for a customer profile
+
+Query a profile based on the email address in the PROFILE_ID environment variable. This is the same profile that should have been created by the streaming import call made previously.
+
+### 5b: Real-time lookup EVENT data (folder)
+
+#### Export: Retrieve EVENT data for a customer profile
+
+Query a profile based on the email address in the PROFILE_ID environment variable. This returns only the time-series Events associated with the profile.  This is the same profile that should have been created by the streaming import call made previously.
+
+### X: Supplementary calls (folder)
+
+This folder contains several optional calls related to the configuration and data used in the calls previously made. 
 
 
 
