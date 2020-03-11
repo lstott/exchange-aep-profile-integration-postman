@@ -47,7 +47,7 @@ Modify the following variables.
 
 The calls in this collection are organized in numbered folders to indicate the sequence. Many of the calls are very similar for treatment of the Profile data and the Event (time-series) data. Folders with an (a) are for the Profile data, and folders with (b) are for the Event data. 
 
-### 0: Initialize and Authenticate
+### 0: Initialize and Authenticate (folder) 
 
 #### INIT: Load Crypto Library for RS256
 Loads a javascript library into the environment. Used to create the JWT token for authentication. Sets a global variable called "jsrsasign-js"
@@ -69,7 +69,7 @@ Adds a custom event for tracking Loyalty account balance updates
 Adds a custom event for tracking Loyalty membership level updates
 
 
-### 1a: Create Schema for PROFILE data
+### 1a: Create Schema for PROFILE data (folder)
 
 #### Schema: Create Mixin containing Loyalty PROFILE details
 The mixin containing the Loyalty details will be created first. This mixin will then be part of the Schema to be created next. Sets an environment variable called "MIXIN_ID_PROFILE". 
@@ -81,7 +81,7 @@ Create a Schema for importing Loyalty data into the profile. Schema uses the "XD
 Defines which field in the Schema is the primary identifier. 
 
 
-### 1b: Create Schema for EVENT data
+### 1b: Create Schema for EVENT data (folder)
 
 #### Schema: Create Mixin containing Loyalty EVENT details
 The mixin containing the Loyalty details will be created first. This mixin will then be part of the Schema to be created next. Sets an environment variable called "MIXIN_ID_EVENT". 
@@ -92,21 +92,21 @@ Create a Schema for importing Loyalty event data into the profile. Schema uses t
 #### Schema: Set Primary Identity Descriptor for Loyalty Event Schema
 Defines which field in the Schema is the primary identifier. 
 
-### 2a: Create DataSet for PROFILE data
+### 2a: Create DataSet for PROFILE data (folder)
 
 #### DataSet: Create Dataset for Loyalty PROFILE Records
 Creates a new Dataset for collecting the Loyalty profile records, using streaming and/or batch. Uses the Loyalty profile schema that was previously created. 
 
-### 2b: Create Dataset for EVENT data 
+### 2b: Create Dataset for EVENT data (folder)
 
 #### DataSet: Create Dataset for Loyalty EVENT Records
 Creates a new Dataset for collecting the Loyalty event records, using streaming and/or batch. Uses the Loyalty event schema that was previously created. 
 
-### 3a: Real-time import for PROFILE data
+### 3a: Real-time import for PROFILE data (folder)
 
 #### Import: Stream to PROFILE DataSet
 
-### 3b: Real-time import for EVENT data
+### 3b: Real-time import for EVENT data (folder)
 
 #### Import: Stream to EVENT DataSet
 
