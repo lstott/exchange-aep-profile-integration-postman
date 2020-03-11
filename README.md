@@ -114,7 +114,11 @@ Creates a new Dataset for collecting the Loyalty event records, using streaming 
 
 #### Import: Create a Batch for PROFILE data
 
+This is the first call of a multi step process. Batches must be created, uploaded, then completed before they can fully process. 
+
 #### Import: Upload file to Batch for PROFILE data
+
+Before hitting "Send" for this call you should select the data file by clicking on the "Body" tab, then choose "binary" then clicking "Select Fille". This [sample file](../master/AEP loyalty profiles.json) can be used if you first download it to your local machine.  
 
 #### Import: Complete a Batch for PROFILE data
 
@@ -123,6 +127,8 @@ Creates a new Dataset for collecting the Loyalty event records, using streaming 
 ### 4b: Batch import for EVENT data (folder)
 
 #### Import: Create a Batch for EVENT data
+
+This is the first call of a multi step process. Batches must be created, uploaded, then completed before they can fully process. 
 
 #### Import: Upload file to Batch for EVENT data
 
