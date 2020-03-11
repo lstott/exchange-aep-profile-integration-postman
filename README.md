@@ -1,5 +1,5 @@
 # exchange-aep-profile-integration-postman
-A [postman collection](../AEP%20-%20Profile%20integration%20for%20ISVs%202020-03-06.postman_collection.json) to assist Exchange partners with the required API calls for integration with Adobe Experience Cloud (AEP) Profiles. This Postman collection includes API calls to... First, prepare the AEP instance for receiving new profile data...  Second, import the profile data (streaming and batch) and... Finally, query for specific profiles. 
+A [postman collection](../master/AEP%20-%20Profile%20integration%20for%20ISVs%202020-03-06.postman_collection.json) to assist Exchange partners with the required API calls for integration with Adobe Experience Cloud (AEP) Profiles. This Postman collection includes API calls to... First, prepare the AEP instance for receiving new profile data...  Second, import the profile data (streaming and batch) and... Finally, query for specific profiles. 
 
 ## Getting set up
 
