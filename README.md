@@ -1,5 +1,5 @@
 # exchange-aep-profile-integration-postman
-A postman collection to assist Exchange partners with the required API calls used to build an integration with Adobe Experience Cloud (AEP) Profiles. This Postman collection includes API calls to... First, prepare the AEP instance for receiving new profile data...  Second, import the profile data (streaming and batch) and... Finally, query for specific profiles. 
+A postman collection to assist Exchange partners with the required API calls for integration with Adobe Experience Cloud (AEP) Profiles. This Postman collection includes API calls to... First, prepare the AEP instance for receiving new profile data...  Second, import the profile data (streaming and batch) and... Finally, query for specific profiles. 
 
 ## Getting set up
 
@@ -40,6 +40,75 @@ Add the following variables to your environment.
 
 Modify the following variables.
 
-* PRIVATE_KEY = _full_text_of_private_key
+* PRIVATE_KEY = _full_text_of_private_key_
+
+
+## Running the API calls
+
+The calls in this collection are organized in numbered folders to indicate the sequence. Many of the calls are very similar for treatment of the Profile data and the Event (time-series) data. Folders with an (a) are for the Profile data, and folders with (b) are for the Event data. 
+
+### 0: Initialize and Authenticate
+
+#### INIT: Load Crypto Library for RS256
+Loads a javascript library into the environment. Used to create the JWT token for authentication. Sets a global variable called "jsrsasign-js"
+
+#### AUTH: Generate JWT and Access Token
+Generates a JWT token using the Crypto RS256, then sends to IMS to retrieve an access_token which will be valid for 24 hours. Sets an environment variable called "ACCESS_TOKEN". 
+
+
+#### Schema: Return {TENANT_ID} and Schema Registry usage information
+This call will retrieve the tenantId, which is needed for Schema related API calls. Sets an environment variable called "TENANT_ID". 
+
+#### Import: Create Real-time Data Inlet
+Creates a streaming endpoint for real-time data ingestion. The same inlet works for both the PROFILE and EVENT data. Sets three environment variables (INLET_ID, INLET_URL, INLET_SOURCE_ID) to be used in the "3: Real-time import" calls. 
+
+#### Event Config: Create a new custom event type (loyaltyBalanceUpdate)
+Adds a custom event for tracking Loyalty account balance updates
+
+#### Event Config: Create a new custom event type (loyaltyLevelUpdate)
+Adds a custom event for tracking Loyalty membership level updates
+
+
+### 1a: Create Schema for PROFILE data
+
+#### Schema: Create Mixin containing Loyalty PROFILE details
+The mixin containing the Loyalty details will be created first. This mixin will then be part of the Schema to be created next. Sets an environment variable called "MIXIN_ID_PROFILE". 
+
+#### Schema: Create PROFILE Schema for Loyalty data
+Create a Schema for importing Loyalty data into the profile. Schema uses the "XDM Individual Profile" class. Sets an environment variable called "SCHEMA_ID_PROFILE".
+
+#### Schema: Set Primary Identity Descriptor for Loyalty Profile Schema
+Defines which field in the Schema is the primary identifier. 
+
+
+### 1b: Create Schema for EVENT data
+
+#### Schema: Create Mixin containing Loyalty EVENT details
+The mixin containing the Loyalty details will be created first. This mixin will then be part of the Schema to be created next. Sets an environment variable called "MIXIN_ID_EVENT". 
+
+#### Schema: Create EVENT Schema for Loyalty data
+Create a Schema for importing Loyalty event data into the profile. Schema uses the "XDM ExperienceEvent" class. Sets an environment variable called "SCHEMA_ID_EVENT".
+
+#### Schema: Set Primary Identity Descriptor for Loyalty Event Schema
+Defines which field in the Schema is the primary identifier. 
+
+### 2a: Create DataSet for PROFILE data
+
+#### DataSet: Create Dataset for Loyalty PROFILE Records
+Creates a new Dataset for collecting the Loyalty profile records, using streaming and/or batch. Uses the Loyalty profile schema that was previously created. 
+
+### 2b: Create Dataset for EVENT data 
+
+#### DataSet: Create Dataset for Loyalty EVENT Records
+Creates a new Dataset for collecting the Loyalty event records, using streaming and/or batch. Uses the Loyalty event schema that was previously created. 
+
+### 3a: Real-time import for PROFILE data
+
+#### Import: Stream to PROFILE DataSet
+
+### 3b: Real-time import for EVENT data
+
+#### Import: Stream to EVENT DataSet
+
 
 
