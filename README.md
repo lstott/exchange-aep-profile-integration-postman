@@ -118,7 +118,7 @@ This is the first call of a multi step process. Batches must be created, uploade
 
 #### Import: Upload file to Batch for PROFILE data
 
-Before hitting "Send" for this call you should select the data file by clicking on the "Body" tab, then choose "binary" then clicking "Select Fille". This [sample Profiles file](../master/AEP%20loyalty%20profiles.json) can be used if you first download it to your local machine.  
+Before hitting "Send" for this call you should select the data file by clicking on the "Body" tab, then choose "binary" then clicking "Select Fille". This [sample Profiles file](../master/AEP%20loyalty%20profiles.json) can be used if you first download it to your local machine. More sample data for this import process can be generated with this [Mockaroo schema - 22f6f910](https://mockaroo.com/22f6f910)
 
 #### Import: Complete a Batch for PROFILE data
 
@@ -132,7 +132,8 @@ This is the first call of a multi step process. Batches must be created, uploade
 
 #### Import: Upload file to Batch for EVENT data
 
-Before hitting "Send" for this call you should select the data file by clicking on the "Body" tab, then choose "binary" then clicking "Select Fille". This [sample Events file](../master/AEP%20loyalty%20events.json) can be used if you first download it to your local machine.  
+Before hitting "Send" for this call you should select the data file by clicking on the "Body" tab, then choose "binary" then clicking "Select Fille". This [sample Events file](../master/AEP%20loyalty%20events.json) can be used if you first download it to your local machine.  More sample data for this import process can be generated with this [Mockaroo schema - d419b8a0](https://mockaroo.com/d419b8a0)
+
 
 #### Import: Complete a Batch for EVENT data
 
