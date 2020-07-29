@@ -16,7 +16,7 @@ The collection can be downloaded [here](../master/AEP%20-%20Profile%20integratio
 
 ### Create an Integration using the Adobe.io console
 
-Follow [this guide](https://www.adobe.io/apis/experienceplatform/console/docs.html#!AdobeDocs/adobeio-console/master/integrations.md) -- specifically the section titled "Creating an Integration in Adobe I/O Console"
+Follow [this guide](https://www.adobe.io/apis/experienceplatform/console/docs.html#!AdobeDocs/adobeio-console/master/projects-empty.md) to create a new "Project" and add the AEP API to it. 
 
 ### Download and import the environment from Adobe.io console
 
