@@ -14,9 +14,9 @@ Before executing the API calls in this collection you will need to...
 
 The collection can be downloaded [here](../master/AEP%20-%20Profile%20integration%20for%20ISVs%202020-03-06.postman_collection.json). Import the collection in Postman using File > Import...
 
-### Create an Integration using the Adobe.io console
+### Create a Project using the Adobe.io console
 
-Follow [this guide](https://www.adobe.io/apis/experienceplatform/console/docs.html#!AdobeDocs/adobeio-console/master/projects-empty.md) to create a new "Project" and add the AEP API to it. 
+Follow [this guide](https://www.adobe.io/apis/experienceplatform/console/docs.html#!AdobeDocs/adobeio-console/master/projects-empty.md) to create a new "Project". Then "Add an API" and select the "Experience Platform API".  
 
 ### Download and import the environment from Adobe.io console
 
@@ -24,9 +24,9 @@ The Adobe.io console will provide you with a Postman environment that contains m
 
 To download the environment file...
 
-1. Navigate to your Integration Overview page at https://console.adobe.io/integrations
-2. Click on the "Export Details to Postman" button
-3. Save the environment json file to your local machine
+1. Navigate to your new Project page
+2. Click on the "Experience Platform API" in the left nav
+3. Click "Download for Postman" button
 4. In Postman use File > Import... to import the environment file
 
 ### Modify the environment
