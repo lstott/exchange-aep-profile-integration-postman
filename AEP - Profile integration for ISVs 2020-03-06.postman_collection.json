@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "96d38040-5f5b-4ee7-a89c-544e8b907335",
+		"_postman_id": "254837e2-9ee1-41b3-8a01-b02901de8001",
 		"name": "AEP - Profile integration for ISVs",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -14,7 +14,7 @@
 						{
 							"listen": "test",
 							"script": {
-								"id": "824e628b-b420-417b-894b-417ab6412896",
+								"id": "3453ba9a-dadd-420a-83ea-450fff3273d7",
 								"exec": [
 									"postman.setGlobalVariable(\"jsrsasign-js\", responseBody);"
 								],
@@ -48,7 +48,7 @@
 						{
 							"listen": "test",
 							"script": {
-								"id": "1759a9d4-ac9a-4eb2-b5d1-a608a43a2cad",
+								"id": "cc5ac352-301c-440b-8284-7ca0cee6aeb7",
 								"exec": [
 									"var data = JSON.parse(responseBody);",
 									"pm.environment.set(\"ACCESS_TOKEN\", data.access_token);"
@@ -59,7 +59,7 @@
 						{
 							"listen": "prerequest",
 							"script": {
-								"id": "f067b81f-65d2-4672-ae41-0ff1338d25f6",
+								"id": "875777ea-4897-4d22-b998-0564fab686d6",
 								"exec": [
 									"// Tips from: https://github.com/kjur/jsrsasign/issues/199",
 									"// https://github.com/kjur/jsrsasign/wiki/Tutorial-for-JWT-generation",
@@ -155,7 +155,7 @@
 						{
 							"listen": "prerequest",
 							"script": {
-								"id": "7a47b564-1af2-4dfe-b5d8-bde8f48cd2eb",
+								"id": "181854da-a59d-41a6-ab9e-819bf165b7e9",
 								"exec": [
 									"/** Begin Adobe-provided Pre-Request Scripts **/",
 									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
@@ -180,7 +180,7 @@
 						{
 							"listen": "test",
 							"script": {
-								"id": "2c8ea7e2-c975-4822-aa2f-866fa20906df",
+								"id": "a789a8e8-a9ff-4f72-9980-530b01d0bfb1",
 								"exec": [
 									"var data = JSON.parse(responseBody);",
 									"pm.environment.set(\"TENANT_ID\", data.tenantId);"
@@ -242,17 +242,15 @@
 					"response": []
 				},
 				{
-					"name": "Import: Create Real-time Data Inlet",
+					"name": "Create Streaming Connection",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
-								"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+								"id": "c2c9cbd0-5e05-4feb-a87b-c4a53cfcc3d7",
 								"exec": [
 									"var data = JSON.parse(responseBody);",
-									"pm.environment.set(\"INLET_ID\", data[\"inletId\"]);",
-									"pm.environment.set(\"INLET_URL\", data[\"inletUrl\"]);",
-									"pm.environment.set(\"INLET_SOURCE_ID\", data[\"sourceId\"]);"
+									"pm.environment.set(\"CONNECTION_ID\", data[\"id\"]);"
 								],
 								"type": "text/javascript"
 							}
@@ -263,53 +261,46 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "bearer {{ACCESS_TOKEN}}",
-								"type": "text"
+								"type": "text",
+								"value": "bearer {{ACCESS_TOKEN}}"
 							},
 							{
 								"key": "x-api-key",
-								"value": "{{API_KEY}}",
-								"type": "text"
+								"type": "text",
+								"value": "{{API_KEY}}"
 							},
 							{
 								"key": "x-gw-ims-org-id",
-								"value": "{{IMS_ORG}}",
-								"type": "text"
+								"type": "text",
+								"value": "{{IMS_ORG}}"
 							},
 							{
 								"key": "x-sandbox-name",
-								"value": "{{SANDBOX_NAME}}",
-								"type": "text"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json",
-								"type": "text"
-							},
-							{
-								"key": "Accept",
-								"value": "application/vnd.adobe.xed+json",
 								"type": "text",
-								"disabled": true
+								"value": "{{SANDBOX_NAME}}"
 							}
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"name\": \"{{UNIQUE_ID}}Streaming Loyalty data\",\n    \"description\": \"Collects streaming data\",\n    \"sourceId\": \"{{UNIQUE_ID}}LoyaltyIngest\",\n    \"dataType\": \"xdm\",\n    \"authenticationRequired\": false\n}"
+							"raw": "{\n     \"name\": \"First Postman Test\",\n     \"providerId\": \"521eee4d-8cbe-4906-bb48-fb6bd4450033\",\n     \"description\": \"Testing Postman\",\n     \"connectionSpec\": {\n         \"id\": \"bc7b00d6-623a-4dfc-9fdb-f1240aeadaeb\",\n         \"version\": \"1.0\"\n     },\n     \"auth\": {\n         \"specName\": \"Streaming Connection\",\n         \"params\": {\n             \"sourceId\": \"Sample connection\",\n             \"dataType\": \"xdm\",\n             \"name\": \"Sample connection\"\n         }\n     }\n }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
 						},
 						"url": {
-							"raw": "{{PLATFORM_GATEWAY}}/data/core/edge/inlet",
+							"raw": "{{PLATFORM_GATEWAY}}/data/foundation/flowservice/connections",
 							"host": [
 								"{{PLATFORM_GATEWAY}}"
 							],
 							"path": [
 								"data",
-								"core",
-								"edge",
-								"inlet"
+								"foundation",
+								"flowservice",
+								"connections"
 							]
-						},
-						"description": "Creates a streaming endpoint for real-time data ingestion. The same inlet works for both the PROFILE and EVENT data"
+						}
 					},
 					"response": []
 				},
@@ -319,7 +310,7 @@
 						{
 							"listen": "test",
 							"script": {
-								"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+								"id": "e7afad72-0c99-433c-9d79-ab9cfbb44e34",
 								"exec": [
 									""
 								],
@@ -377,7 +368,7 @@
 						{
 							"listen": "test",
 							"script": {
-								"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+								"id": "30f62b0e-e6c8-43d4-bb31-bdaea349b460",
 								"exec": [
 									""
 								],
@@ -444,7 +435,7 @@
 								{
 									"listen": "test",
 									"script": {
-										"id": "1759a9d4-ac9a-4eb2-b5d1-a608a43a2cad",
+										"id": "413bcfcd-5b69-440c-b04a-0fedd2853e32",
 										"exec": [
 											"var data = JSON.parse(responseBody);",
 											"pm.environment.set(\"MIXIN_ID_PROFILE\", data[\"$id\"]);"
@@ -455,7 +446,7 @@
 								{
 									"listen": "prerequest",
 									"script": {
-										"id": "f067b81f-65d2-4672-ae41-0ff1338d25f6",
+										"id": "91e70186-8706-45c3-b855-9f3e7769b4f8",
 										"exec": [
 											"if(! pm.environment.get(\"UNIQUE_ID\") )",
 											"    pm.environment.set(\"UNIQUE_ID\", \"\");"
@@ -526,7 +517,7 @@
 								{
 									"listen": "test",
 									"script": {
-										"id": "1759a9d4-ac9a-4eb2-b5d1-a608a43a2cad",
+										"id": "5cdc079a-ad52-4dca-8f21-f2b10da8543d",
 										"exec": [
 											"var data = JSON.parse(responseBody);",
 											"pm.environment.set(\"SCHEMA_ID_PROFILE\", data[\"$id\"]);"
@@ -537,7 +528,7 @@
 								{
 									"listen": "prerequest",
 									"script": {
-										"id": "f067b81f-65d2-4672-ae41-0ff1338d25f6",
+										"id": "cb66de80-7369-4b80-8a13-5d18b6dad90e",
 										"exec": [
 											"if(! pm.environment.get(\"UNIQUE_ID\") )",
 											"    pm.environment.set(\"UNIQUE_ID\", \"\");"
@@ -608,7 +599,7 @@
 								{
 									"listen": "test",
 									"script": {
-										"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+										"id": "7bec3d23-a2bd-4daf-8800-c7114b625b94",
 										"exec": [
 											""
 										],
@@ -683,7 +674,7 @@
 								{
 									"listen": "test",
 									"script": {
-										"id": "1759a9d4-ac9a-4eb2-b5d1-a608a43a2cad",
+										"id": "ecfa917b-b9af-4404-9034-007e5cfbcd0b",
 										"exec": [
 											"var data = JSON.parse(responseBody);",
 											"pm.environment.set(\"MIXIN_ID_EVENT\", data[\"$id\"]);"
@@ -694,7 +685,7 @@
 								{
 									"listen": "prerequest",
 									"script": {
-										"id": "f067b81f-65d2-4672-ae41-0ff1338d25f6",
+										"id": "46d17d5b-8e00-4154-8a18-da831aa9c5f9",
 										"exec": [
 											"if(! pm.environment.get(\"UNIQUE_ID\") )",
 											"    pm.environment.set(\"UNIQUE_ID\", \"\");"
@@ -765,7 +756,7 @@
 								{
 									"listen": "test",
 									"script": {
-										"id": "1759a9d4-ac9a-4eb2-b5d1-a608a43a2cad",
+										"id": "4863116f-457c-46c8-a140-e790e0ba805b",
 										"exec": [
 											"var data = JSON.parse(responseBody);",
 											"pm.environment.set(\"SCHEMA_ID_EVENT\", data[\"$id\"]);"
@@ -776,7 +767,7 @@
 								{
 									"listen": "prerequest",
 									"script": {
-										"id": "f067b81f-65d2-4672-ae41-0ff1338d25f6",
+										"id": "a38e2a82-5840-4215-888f-edce10a37346",
 										"exec": [
 											"if(! pm.environment.get(\"UNIQUE_ID\") )",
 											"    pm.environment.set(\"UNIQUE_ID\", \"\");"
@@ -847,7 +838,7 @@
 								{
 									"listen": "test",
 									"script": {
-										"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+										"id": "7cea76d1-6dfa-48a1-a255-656a884f4748",
 										"exec": [
 											""
 										],
@@ -928,7 +919,7 @@
 								{
 									"listen": "test",
 									"script": {
-										"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+										"id": "9a7c1466-e497-4149-b479-4c4552bc60a6",
 										"exec": [
 											"var data = JSON.parse(responseBody);",
 											"var dsId = data[0];",
@@ -1006,7 +997,7 @@
 								{
 									"listen": "test",
 									"script": {
-										"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+										"id": "8ad61fdd-ef9e-4ba2-a9c5-6d78ed1ded3f",
 										"exec": [
 											"var data = JSON.parse(responseBody);",
 											"var dsId = data[0];",
@@ -1090,7 +1081,7 @@
 								{
 									"listen": "test",
 									"script": {
-										"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+										"id": "c2562a28-8161-4d54-89d8-5858abfa6e67",
 										"exec": [
 											""
 										],
@@ -1100,7 +1091,7 @@
 								{
 									"listen": "prerequest",
 									"script": {
-										"id": "e2e4434f-9e2e-4651-aab0-7a39f8c37a4b",
+										"id": "b0db1fc7-6267-4b1e-9dc0-c2dee42eb4d4",
 										"exec": [
 											"var profile_id = pm.environment.get(\"PROFILE_ID\");",
 											"if(!profile_id)",
@@ -1156,7 +1147,7 @@
 								{
 									"listen": "test",
 									"script": {
-										"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+										"id": "c9696d3b-34a1-4122-af80-0a370533143b",
 										"exec": [
 											""
 										],
@@ -1166,7 +1157,7 @@
 								{
 									"listen": "prerequest",
 									"script": {
-										"id": "e2e4434f-9e2e-4651-aab0-7a39f8c37a4b",
+										"id": "459aae9f-8f67-43b8-8bf6-a597c616ab8e",
 										"exec": [
 											"var profile_id = pm.environment.get(\"PROFILE_ID\");",
 											"if(!profile_id)",
@@ -1255,7 +1246,7 @@
 								{
 									"listen": "test",
 									"script": {
-										"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+										"id": "69683e3e-6078-4cc4-9e89-21ea8a850bc7",
 										"exec": [
 											"var data = JSON.parse(responseBody);",
 											"pm.environment.set(\"BATCH_ID_PROFILE\", data[\"id\"]);"
@@ -1324,7 +1315,7 @@
 								{
 									"listen": "test",
 									"script": {
-										"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+										"id": "9d8fee1c-62fb-47d1-9b27-fa7fccdf91a9",
 										"exec": [
 											""
 										],
@@ -1334,7 +1325,7 @@
 								{
 									"listen": "prerequest",
 									"script": {
-										"id": "3e097a6a-52a3-484b-9a0a-d0be174256cc",
+										"id": "70c9775c-27a8-4c43-9bb1-fb794436b981",
 										"exec": [
 											"var file_name = pm.environment.get(\"IMPORT_BATCH_FILE_NAME\");",
 											"if(!file_name)",
@@ -1412,7 +1403,7 @@
 								{
 									"listen": "test",
 									"script": {
-										"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+										"id": "0a8494c5-a202-4c3b-b707-e69f0a5315d3",
 										"exec": [
 											""
 										],
@@ -1487,7 +1478,7 @@
 								{
 									"listen": "test",
 									"script": {
-										"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+										"id": "4a27859d-fbec-4f6b-b88f-3a248f75714f",
 										"exec": [
 											""
 										],
@@ -1560,7 +1551,7 @@
 								{
 									"listen": "test",
 									"script": {
-										"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+										"id": "30396f5c-ccc1-455e-8d08-a1b8b276badc",
 										"exec": [
 											"var data = JSON.parse(responseBody);",
 											"pm.environment.set(\"BATCH_ID_EVENT\", data[\"id\"]);"
@@ -1629,7 +1620,7 @@
 								{
 									"listen": "test",
 									"script": {
-										"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+										"id": "fa0fa45f-16e3-4a8a-bd88-10f810fea7ab",
 										"exec": [
 											""
 										],
@@ -1639,7 +1630,7 @@
 								{
 									"listen": "prerequest",
 									"script": {
-										"id": "3e097a6a-52a3-484b-9a0a-d0be174256cc",
+										"id": "6f712e42-ebeb-4be2-9854-bd47094265fd",
 										"exec": [
 											"var file_name = pm.environment.get(\"IMPORT_BATCH_FILE_NAME\");",
 											"if(!file_name)",
@@ -1717,7 +1708,7 @@
 								{
 									"listen": "test",
 									"script": {
-										"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+										"id": "00ab97c7-4443-4eda-a3bb-830cc47f8153",
 										"exec": [
 											""
 										],
@@ -1792,7 +1783,7 @@
 								{
 									"listen": "test",
 									"script": {
-										"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+										"id": "aa72b237-2bad-42d7-83d7-14471a9156fb",
 										"exec": [
 											""
 										],
@@ -1871,7 +1862,7 @@
 								{
 									"listen": "test",
 									"script": {
-										"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+										"id": "4cb54ab0-d69b-4045-9c09-c36a80cb28a4",
 										"exec": [
 											""
 										],
@@ -1881,7 +1872,7 @@
 								{
 									"listen": "prerequest",
 									"script": {
-										"id": "4e7b4c36-7d95-45c0-8d2c-43fdd5bdac73",
+										"id": "9c9c017e-6cd1-4498-bce2-3f9141590957",
 										"exec": [
 											"var profile_ID = pm.environment.get(\"PROFILE_ID\");",
 											"//pm.variables.set(\"PROFILE_ID_URIENCODED\", profile_ID);",
@@ -1972,7 +1963,7 @@
 								{
 									"listen": "test",
 									"script": {
-										"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+										"id": "fe9aa9c2-a1b1-46b0-a1e4-42b8fd538e82",
 										"exec": [
 											""
 										],
@@ -1982,7 +1973,7 @@
 								{
 									"listen": "prerequest",
 									"script": {
-										"id": "4e7b4c36-7d95-45c0-8d2c-43fdd5bdac73",
+										"id": "0cdc7b4b-dcf0-4575-90f1-09561bf3c7ac",
 										"exec": [
 											"var profile_ID = pm.environment.get(\"PROFILE_ID\");",
 											"//pm.variables.set(\"PROFILE_ID_URIENCODED\", profile_ID);",
@@ -2075,12 +2066,72 @@
 			"name": "X: Supplementary calls",
 			"item": [
 				{
+					"name": "X Get Data Collection URL",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "4d16399e-b4c8-4f88-83ac-e5cb2920132b",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "bearer {{ACCESS_TOKEN}}",
+								"type": "text"
+							},
+							{
+								"key": "x-api-key",
+								"value": "{{API_KEY}}",
+								"type": "text"
+							},
+							{
+								"key": "x-gw-ims-org-id",
+								"value": "{{IMS_ORG}}",
+								"type": "text"
+							},
+							{
+								"key": "x-sandbox-name",
+								"value": "{{SANDBOX_NAME}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{PLATFORM_GATEWAY}}/data/core/edge/inlet",
+							"host": [
+								"{{PLATFORM_GATEWAY}}"
+							],
+							"path": [
+								"data",
+								"core",
+								"edge",
+								"inlet"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "X Schema: Get all tenant Schemas",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
-								"id": "1759a9d4-ac9a-4eb2-b5d1-a608a43a2cad",
+								"id": "4f28bbdd-1784-4719-a701-dfcd2cd51878",
 								"exec": [
 									""
 								],
@@ -2090,7 +2141,7 @@
 						{
 							"listen": "prerequest",
 							"script": {
-								"id": "f067b81f-65d2-4672-ae41-0ff1338d25f6",
+								"id": "b24cc0d1-35f7-4e44-b71c-b9cf12218e45",
 								"exec": [
 									""
 								],
@@ -2157,7 +2208,7 @@
 						{
 							"listen": "test",
 							"script": {
-								"id": "1759a9d4-ac9a-4eb2-b5d1-a608a43a2cad",
+								"id": "f34d1aae-a123-43e8-b4d8-a15ce5cbb36c",
 								"exec": [
 									""
 								],
@@ -2167,7 +2218,7 @@
 						{
 							"listen": "prerequest",
 							"script": {
-								"id": "f067b81f-65d2-4672-ae41-0ff1338d25f6",
+								"id": "e545b5a7-2792-494f-bef2-bca14ce71416",
 								"exec": [
 									""
 								],
@@ -2235,7 +2286,7 @@
 						{
 							"listen": "prerequest",
 							"script": {
-								"id": "e1bbe625-5c5a-4aa2-9f35-a9e98b38b5dd",
+								"id": "6241e815-82ac-440d-89bd-e5bccd1bcc52",
 								"exec": [
 									"/** Begin Adobe-provided Pre-Request Scripts **/",
 									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
@@ -2327,7 +2378,7 @@
 						{
 							"listen": "prerequest",
 							"script": {
-								"id": "e1bbe625-5c5a-4aa2-9f35-a9e98b38b5dd",
+								"id": "968dfa5e-d593-4faa-90f9-0c43aedc37ad",
 								"exec": [
 									"/** Begin Adobe-provided Pre-Request Scripts **/",
 									"// Do not send HTTP Headers with empty variables, as Postman will send the literal variable name",
@@ -2419,7 +2470,7 @@
 						{
 							"listen": "test",
 							"script": {
-								"id": "1759a9d4-ac9a-4eb2-b5d1-a608a43a2cad",
+								"id": "b4e5fcc4-3c5d-4f79-8109-2e3af2f05283",
 								"exec": [
 									""
 								],
@@ -2429,7 +2480,7 @@
 						{
 							"listen": "prerequest",
 							"script": {
-								"id": "f067b81f-65d2-4672-ae41-0ff1338d25f6",
+								"id": "28221762-5571-4446-8e7b-0e6e678c2956",
 								"exec": [
 									""
 								],
@@ -2489,72 +2540,12 @@
 					"response": []
 				},
 				{
-					"name": "X Import: Get Data Inlet list",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
-								"exec": [
-									""
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"protocolProfileBehavior": {
-						"disableBodyPruning": true
-					},
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "bearer {{ACCESS_TOKEN}}",
-								"type": "text"
-							},
-							{
-								"key": "x-api-key",
-								"value": "{{API_KEY}}",
-								"type": "text"
-							},
-							{
-								"key": "x-gw-ims-org-id",
-								"value": "{{IMS_ORG}}",
-								"type": "text"
-							},
-							{
-								"key": "x-sandbox-name",
-								"value": "{{SANDBOX_NAME}}",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": ""
-						},
-						"url": {
-							"raw": "{{PLATFORM_GATEWAY}}/data/core/edge/inlet",
-							"host": [
-								"{{PLATFORM_GATEWAY}}"
-							],
-							"path": [
-								"data",
-								"core",
-								"edge",
-								"inlet"
-							]
-						}
-					},
-					"response": []
-				},
-				{
 					"name": "X Event Config: GET eventTypes",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
-								"id": "a2d71895-2795-4417-ac1a-6d2a336323d5",
+								"id": "0311ba16-ba72-4eb9-9b32-f9833d84f578",
 								"exec": [
 									""
 								],
